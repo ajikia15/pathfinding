@@ -122,6 +122,9 @@
   margin-bottom: 18px;
   display: flex;
   justify-content: center;
+  min-height: 520px;
+  min-width: 900px;
+  /* Make graph area more prominent */
 }
 .output {
   background: #fff;
