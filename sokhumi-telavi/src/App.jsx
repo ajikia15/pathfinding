@@ -116,10 +116,12 @@ function calcPathCost(path, links) {
   for (let i = 0; i < path.length - 1; ++i) {
     const a = path[i],
       b = path[i + 1];
-    const link = links.find(
-      (l) =>
-        (l.source === a && l.target === b) || (l.source === b && l.target === a)
-    );
+    // Fix: compare string values for source/target, which may be objects
+    const link = links.find((l) => {
+      const src = typeof l.source === "object" ? l.source.id : l.source;
+      const tgt = typeof l.target === "object" ? l.target.id : l.target;
+      return (src === a && tgt === b) || (src === b && tgt === a);
+    });
     if (link) cost += link.cost;
   }
   return cost;
@@ -367,11 +369,55 @@ function App() {
       <div className="output">
         <h3>Path Output</h3>
         <div>{output}</div>
-        {animState.path && animState.path.length > 1 && (
-          <div className="path-cost">
-            Total Cost: {calcPathCost(animState.path, graph.links)}
-          </div>
-        )}
+        <div className="step-costs">
+          {animState.visited.map((nodeId, idx) => {
+            if (idx === 0) {
+              return <div key={idx}>Step: 1 &nbsp; Cost: 0</div>;
+            }
+            const prev = animState.visited[idx - 1];
+            const curr = nodeId;
+            // Find the link cost between prev and curr
+            const link = graph.links.find((l) => {
+              const src = typeof l.source === "object" ? l.source.id : l.source;
+              const tgt = typeof l.target === "object" ? l.target.id : l.target;
+              return (
+                (src === prev && tgt === curr) || (src === curr && tgt === prev)
+              );
+            });
+            const prevTotal = animState.visited
+              .slice(0, idx)
+              .reduce((sum, n, i, arr) => {
+                if (i === 0) return 0;
+                const a = arr[i - 1],
+                  b = arr[i];
+                const l = graph.links.find((lk) => {
+                  const src =
+                    typeof lk.source === "object" ? lk.source.id : lk.source;
+                  const tgt =
+                    typeof lk.target === "object" ? lk.target.id : lk.target;
+                  return (src === a && tgt === b) || (src === b && tgt === a);
+                });
+                return sum + (l ? l.cost : 0);
+              }, 0);
+            const added = link ? link.cost : 0;
+            const formula = `${prevTotal} + ${added} = ${prevTotal + added}`;
+            return (
+              <div key={idx}>
+                Step: {idx + 1} &nbsp; Cost: {prevTotal + added} (
+                <span style={{ color: "#888" }}>+{added}</span>) &nbsp;{" "}
+                <span style={{ color: "#888" }}>{formula}</span>
+              </div>
+            );
+          })}
+        </div>
+        {/* Always show total cost if a path exists and output is not an error or 'No path found' */}
+        {output &&
+          !output.startsWith("Error") &&
+          output !== "No path found" && (
+            <div className="path-cost">
+              Total Cost: {calcPathCost(output.split(" → "), graph.links)}
+            </div>
+          )}
       </div>
     </div>
   );

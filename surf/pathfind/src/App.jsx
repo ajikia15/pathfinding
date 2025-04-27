@@ -48,6 +48,7 @@ export default function App() {
   };
 
   const runAStar = async () => {
+    console.log('🐤 runAStar start', { start, goal });
     reset();
     // build adjacency
     const neighbors = {};
@@ -59,15 +60,18 @@ export default function App() {
       neighbors[src].push({ target: tgt, cost: l.cost });
       neighbors[tgt].push({ target: src, cost: l.cost });
     });
+    console.log('🗺 neighbors map:', neighbors);
     const h = Object.fromEntries(algoGraph.nodes.map(n => [n.id, n.h]));
 
     const openSet = new Set([start]);
+    console.log('🆕 initial openSet:', [...openSet]);
     const cameFrom = {};
     const gScore = { [start]: 0 };
     const fScore = { [start]: h[start] };
     const closedSet = new Set();
 
     while (openSet.size > 0) {
+      console.log('🔄 iteration, openSet:', [...openSet]);
       // pick lowest fScore
       let current = [...openSet].reduce((a, b) =>
         (fScore[a] || Infinity) < (fScore[b] || Infinity) ? a : b
@@ -94,6 +98,7 @@ export default function App() {
       }
     }
 
+    console.log('✅ loop ended, cameFrom:', cameFrom);
     // reconstruct path
     const path = [];
     let curr = goal;
