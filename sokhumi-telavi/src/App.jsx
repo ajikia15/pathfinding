@@ -1,15 +1,39 @@
 import "./App.css";
+import { useState } from "react";
 import AStarSearchDemo from "./components/AStarSearchDemo";
 
 function App() {
+  const [tab, setTab] = useState("astar");
   return (
     <div className="main-app-bg">
       <header className="main-header">
-        <h1>Graph Search Visualizer</h1>
-        <p className="subtitle">A* Search Demo (more algorithms coming soon)</p>
+        <div className="logo-title">
+          <span className="logo-dot" />
+          <h1>Graph Search Visualizer</h1>
+        </div>
+        <nav className="tab-nav">
+          <button
+            className={tab === "astar" ? "tab-btn active" : "tab-btn"}
+            onClick={() => setTab("astar")}
+          >
+            A* Search
+          </button>
+          <button
+            className={tab === "other" ? "tab-btn active" : "tab-btn"}
+            onClick={() => setTab("other")}
+          >
+            Other Algorithm
+          </button>
+        </nav>
       </header>
       <main className="main-content">
-        <AStarSearchDemo />
+        {tab === "astar" && <AStarSearchDemo />}
+        {tab === "other" && (
+          <div className="algo-placeholder card">
+            <h2>Other Algorithm</h2>
+            <p>Coming soon! Add your algorithm here.</p>
+          </div>
+        )}
       </main>
       <footer className="main-footer">
         <span>© {new Date().getFullYear()} Graph Search Visualizer</span>

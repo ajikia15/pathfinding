@@ -5,6 +5,129 @@
   text-align: center;
 }
 
+/* Modern dark theme inspired by Vercel/shadcn */
+:root {
+  --bg: #101014;
+  --bg-card: rgba(24, 24, 28, 0.98);
+  --bg-glass: rgba(32, 32, 40, 0.85);
+  --border: #23232b;
+  --border-light: #2d2d38;
+  --text: #f3f3f7;
+  --text-muted: #b0b0c3;
+  --accent: #6366f1;
+  --accent2: #0ea5e9;
+  --danger: #e74c3c;
+  --success: #27ae60;
+  --shadow: 0 4px 32px 0 #000a;
+  --radius: 18px;
+  --radius-sm: 10px;
+  --radius-lg: 28px;
+  --glass-blur: 8px;
+  font-family: "Inter", system-ui, sans-serif;
+}
+body,
+html,
+#root,
+.main-app-bg {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+}
+.main-app-bg {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+}
+.maxwidth-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.main-header {
+  padding: 24px 0 0 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.logo-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.logo-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 0 12px var(--accent2);
+  margin-right: 4px;
+}
+.main-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin: 0;
+}
+.tab-nav {
+  display: flex;
+  gap: 2px;
+  margin: 24px 0 0 0;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 4px 8px;
+  position: relative;
+}
+.tab-nav:after {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1.5px;
+  background: var(--border-light);
+  border-radius: 1px;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.08em;
+  font-weight: 500;
+  padding: 10px 32px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+.tab-btn.active {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 2px 12px 0 #0004;
+}
+.tab-btn:hover:not(.active) {
+  background: var(--border-light);
+  color: var(--text);
+}
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 40px 0 0 0;
+  width: 100vw;
+  min-height: 80vh;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -34,7 +157,16 @@
 }
 
 .card {
-  padding: 2em;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 40px 0 #000b, 0 1.5px 0 0 var(--border-light);
+  border: 1.5px solid var(--border-light);
+  padding: 2.2em 2.2em 1.5em 2.2em;
+  margin-bottom: 36px;
+  width: 100%;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .read-the-docs {
@@ -53,28 +185,66 @@
 .panel {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 18px;
+  margin-bottom: 24px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  padding: 18px 24px;
+  box-shadow: 0 2px 12px #0002;
+  border: 1.5px solid var(--border-light);
 }
 .panel label {
-  font-weight: bold;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 .panel select,
 .panel button {
   font-size: 1em;
-  padding: 2px 8px;
+  padding: 7px 18px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text);
+  font-weight: 500;
+  outline: none;
+  transition: border 0.18s, background 0.18s;
+}
+.panel select:focus,
+.panel button:focus {
+  border: 1.5px solid var(--accent2);
+}
+.panel button {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 2px 8px #0002;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+.panel button:disabled {
+  background: var(--border-light);
+  color: var(--text-muted);
+  cursor: not-allowed;
 }
 .legend {
   display: flex;
   gap: 18px;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
+  margin-top: 8px;
   align-items: center;
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  padding: 12px 24px;
+  box-shadow: 0 2px 12px #0002;
+  border: 1.5px solid var(--border-light);
 }
 .legend-item {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.98em;
+  font-size: 1em;
+  color: var(--text-muted);
 }
 .legend-color {
   display: inline-block;
@@ -106,34 +276,66 @@
 .step-counter {
   margin-left: 18px;
   font-weight: bold;
-  color: #555;
+  color: var(--accent2);
+  font-size: 1.1em;
 }
 .path-cost {
   margin-top: 6px;
   font-size: 1.08em;
-  color: #e67e22;
+  color: var(--accent);
   font-weight: bold;
 }
 .graph-area {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px #0001;
-  padding: 8px;
-  margin-bottom: 18px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 40px 0 #000b, 0 1.5px 0 0 var(--border-light);
+  border: 1.5px solid var(--border-light);
+  padding: 18px;
+  margin: 40px 0 40px 0;
   display: flex;
   justify-content: center;
-  min-height: 520px;
-  min-width: 900px;
-  /* Make graph area more prominent */
+  min-height: 640px;
+  min-width: 1100px;
+  max-width: 100vw;
+  backdrop-filter: blur(var(--glass-blur));
 }
 .output {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px #0001;
-  padding: 12px 16px;
+  background: var(--bg-glass);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 4px #0002;
+  border: 1.5px solid var(--border-light);
+  padding: 18px 24px;
   min-height: 48px;
+  color: var(--text);
+  margin-bottom: 24px;
 }
 .output h3 {
   margin: 0 0 6px 0;
   font-size: 1.1em;
+  color: var(--accent2);
+}
+.main-footer {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.98em;
+  padding: 32px 0 18px 0;
+  background: transparent;
+  letter-spacing: 0.02em;
+  border-top: 1.5px solid var(--border-light);
+  margin-top: 32px;
+}
+@media (max-width: 900px) {
+  .maxwidth-container {
+    padding: 0 8px;
+  }
+  .card,
+  .graph-area {
+    max-width: 98vw;
+    min-width: 0;
+    padding: 1.2em 0.5em 1em 0.5em;
+  }
+  .graph-area {
+    padding: 6px;
+    min-height: 400px;
+  }
 }
