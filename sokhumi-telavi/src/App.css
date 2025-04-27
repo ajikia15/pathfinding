@@ -1,0 +1,136 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: sans-serif;
+  background: #f8f8f8;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #0001;
+  padding: 24px 16px 32px 16px;
+}
+.panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.panel label {
+  font-weight: bold;
+}
+.panel select,
+.panel button {
+  font-size: 1em;
+  padding: 2px 8px;
+}
+.legend {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.98em;
+}
+.legend-color {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #333;
+  margin-right: 3px;
+}
+.legend-color.yellow {
+  background: #ffe066;
+}
+.legend-color.green {
+  background: #b6fcb6;
+}
+.legend-color.red {
+  background: #e74c3c;
+}
+.legend-color.blue {
+  background: #3498db;
+}
+.legend-color.purple {
+  background: #9b59b6;
+}
+.legend-color.white {
+  background: #fff;
+  border: 1.5px solid #aaa;
+}
+.step-counter {
+  margin-left: 18px;
+  font-weight: bold;
+  color: #555;
+}
+.path-cost {
+  margin-top: 6px;
+  font-size: 1.08em;
+  color: #e67e22;
+  font-weight: bold;
+}
+.graph-area {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px #0001;
+  padding: 8px;
+  margin-bottom: 18px;
+  display: flex;
+  justify-content: center;
+}
+.output {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px #0001;
+  padding: 12px 16px;
+  min-height: 48px;
+}
+.output h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.1em;
+}
