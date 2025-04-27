@@ -312,37 +312,108 @@ function App() {
           nodeLabel={(n) => `${n.id} (h=${n.h})`}
           linkLabel={(l) => `cost=${l.cost}`}
           nodeCanvasObject={(node, ctx, globalScale) => {
+            // Node style
             const label = `${node.id}`;
             let color = COLOR_DEFAULT;
-            if (node.id === start) color = COLOR_START;
-            if (node.id === goal) color = COLOR_GOAL;
-            if (animState.path.includes(node.id)) color = COLOR_PATH;
-            else if (animState.expanded === node.id) color = COLOR_EXPANDING;
-            else if (animState.visited.includes(node.id)) color = COLOR_VISITED;
+            let border = "#333";
+            let shadow = false;
+            if (node.id === start) {
+              color = COLOR_START;
+              border = "#217dbb";
+              shadow = true;
+            }
+            if (node.id === goal) {
+              color = COLOR_GOAL;
+              border = "#7d3c98";
+              shadow = true;
+            }
+            if (animState.path.includes(node.id)) {
+              color = COLOR_PATH;
+              border = "#b03a2e";
+              shadow = true;
+            } else if (animState.expanded === node.id) {
+              color = COLOR_EXPANDING;
+              border = "#bfa900";
+              shadow = true;
+            } else if (animState.visited.includes(node.id)) {
+              color = COLOR_VISITED;
+              border = "#27ae60";
+            }
+            // Node circle
+            ctx.save();
+            if (shadow) {
+              ctx.shadowColor = "rgba(0,0,0,0.18)";
+              ctx.shadowBlur = 8;
+            }
             ctx.beginPath();
-            ctx.arc(node.x, node.y, 16, 0, 2 * Math.PI, false);
+            ctx.arc(node.x, node.y, 13, 0, 2 * Math.PI, false);
             ctx.fillStyle = color;
             ctx.fill();
-            ctx.strokeStyle = "#333";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = border;
             ctx.stroke();
-            // Draw heuristic h below node
-            ctx.font = `${11 / globalScale}px sans-serif`;
+            ctx.restore();
+            // Node label
+            ctx.font = `bold ${14 / globalScale}px sans-serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillStyle = "#222";
-            ctx.fillText(label, node.x, node.y - 10);
-            ctx.font = `${10 / globalScale}px sans-serif`;
-            ctx.fillStyle = "#666";
-            ctx.fillText(`h=${node.h}`, node.x, node.y + 12);
+            ctx.fillText(label, node.x, node.y - 2);
+            // Heuristic badge
+            const badgeW = 28,
+              badgeH = 16,
+              badgeR = 8;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(node.x - badgeW / 2 + badgeR, node.y + 15);
+            ctx.lineTo(node.x + badgeW / 2 - badgeR, node.y + 15);
+            ctx.quadraticCurveTo(
+              node.x + badgeW / 2,
+              node.y + 15,
+              node.x + badgeW / 2,
+              node.y + 15 + badgeR
+            );
+            ctx.lineTo(node.x + badgeW / 2, node.y + 15 + badgeH - badgeR);
+            ctx.quadraticCurveTo(
+              node.x + badgeW / 2,
+              node.y + 15 + badgeH,
+              node.x + badgeW / 2 - badgeR,
+              node.y + 15 + badgeH
+            );
+            ctx.lineTo(node.x - badgeW / 2 + badgeR, node.y + 15 + badgeH);
+            ctx.quadraticCurveTo(
+              node.x - badgeW / 2,
+              node.y + 15 + badgeH,
+              node.x - badgeW / 2,
+              node.y + 15 + badgeH - badgeR
+            );
+            ctx.lineTo(node.x - badgeW / 2, node.y + 15 + badgeR);
+            ctx.quadraticCurveTo(
+              node.x - badgeW / 2,
+              node.y + 15,
+              node.x - badgeW / 2 + badgeR,
+              node.y + 15
+            );
+            ctx.closePath();
+            ctx.fillStyle = "#f3f3f3";
+            ctx.strokeStyle = "#bbb";
+            ctx.lineWidth = 1.5;
+            ctx.fill();
+            ctx.stroke();
+            ctx.font = `bold ${11 / globalScale}px sans-serif`;
+            ctx.fillStyle = "#7d6608";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(`h=${node.h}`, node.x, node.y + 15 + badgeH / 2);
+            ctx.restore();
           }}
           linkColor={(l) =>
-            animState.pathLinks.includes(l) ? COLOR_PATH : "#888"
+            animState.pathLinks.includes(l) ? COLOR_PATH : "#bbb"
           }
-          linkWidth={(l) => (animState.pathLinks.includes(l) ? 4 : 2)}
+          linkWidth={(l) => (animState.pathLinks.includes(l) ? 4 : 1.5)}
           linkCanvasObjectMode={() => "after"}
           linkCanvasObject={(link, ctx, globalScale) => {
-            // Draw cost label at midpoint
+            // Draw cost label at midpoint with background
             const start =
               typeof link.source === "object"
                 ? link.source
@@ -354,12 +425,53 @@ function App() {
             if (!start || !end) return;
             const midX = (start.x + end.x) / 2;
             const midY = (start.y + end.y) / 2;
+            const txt = `${link.cost}`;
             ctx.save();
-            ctx.font = `${10 / globalScale}px sans-serif`;
-            ctx.fillStyle = "#222";
+            ctx.font = `bold ${11 / globalScale}px sans-serif`;
+            const textW = ctx.measureText(txt).width + 8;
+            const textH = 16;
+            ctx.globalAlpha = 0.85;
+            ctx.fillStyle = "#fff";
+            ctx.strokeStyle = "#bbb";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(midX - textW / 2 + 6, midY - textH / 2);
+            ctx.lineTo(midX + textW / 2 - 6, midY - textH / 2);
+            ctx.quadraticCurveTo(
+              midX + textW / 2,
+              midY - textH / 2,
+              midX + textW / 2,
+              midY - textH / 2 + 6
+            );
+            ctx.lineTo(midX + textW / 2, midY + textH / 2 - 6);
+            ctx.quadraticCurveTo(
+              midX + textW / 2,
+              midY + textH / 2,
+              midX + textW / 2 - 6,
+              midY + textH / 2
+            );
+            ctx.lineTo(midX - textW / 2 + 6, midY + textH / 2);
+            ctx.quadraticCurveTo(
+              midX - textW / 2,
+              midY + textH / 2,
+              midX - textW / 2,
+              midY + textH / 2 - 6
+            );
+            ctx.lineTo(midX - textW / 2, midY - textH / 2 + 6);
+            ctx.quadraticCurveTo(
+              midX - textW / 2,
+              midY - textH / 2,
+              midX - textW / 2 + 6,
+              midY - textH / 2
+            );
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = "#444";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(link.cost, midX, midY);
+            ctx.fillText(txt, midX, midY);
             ctx.restore();
           }}
           width={700}
