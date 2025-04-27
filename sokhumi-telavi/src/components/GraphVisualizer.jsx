@@ -20,6 +20,19 @@ function GraphVisualizer({
   useEffect(() => {
     if (fgRef.current) fgRef.current.refresh();
   }, [path, visited, expanding, startNode, endNode]);
+
+  // Add this effect to increase node repulsion
+  useEffect(() => {
+    if (fgRef.current) {
+      fgRef.current.d3Force("charge").strength(-8000); // Max repulsion
+      fgRef.current.d3Force("center").strength(0.005); // Very weak centering
+      fgRef.current.d3Force("link").distance(220); // Moderate link distance
+      fgRef.current.d3ReheatSimulation();
+      // Zoom out for better visibility
+      fgRef.current.zoomToFit(400, 80, (node) => true);
+    }
+  }, [graph]); // Re-run when graph changes
+
   // Highlight path links
   const pathLinks = [];
   if (path && path.length > 1) {
@@ -41,101 +54,161 @@ function GraphVisualizer({
         graphData={graph}
         nodeLabel={(n) => `${n.id} (h=${n.h})`}
         linkLabel={(l) => `cost=${l.cost}`}
+        nodeRelSize={5} // smaller node
+        d3VelocityDecay={0.18}
+        linkWidth={(l) => (pathLinks.includes(l) ? 5 : 2)} // thinner links
+        width={1600} // larger canvas
+        height={900}
         nodeCanvasObject={(node, ctx, globalScale) => {
-          const label = `${node.id}`;
-          let color = COLOR_DEFAULT;
-          let border = "#333";
+          // Stylish dark mode node design
+          const label = node.id;
+          let color = "#23272f"; // dark node background
+          let border = "#444";
           let shadow = false;
+          let glow = false;
           if (node.id === startNode) {
-            color = COLOR_START;
-            border = "#217dbb";
+            color = "#1e3a8a"; // blue
+            border = "#60a5fa";
             shadow = true;
+            glow = true;
           }
           if (node.id === endNode) {
-            color = COLOR_GOAL;
-            border = "#7d3c98";
+            color = "#6d28d9"; // purple
+            border = "#c084fc";
             shadow = true;
+            glow = true;
           }
           if (path.includes(node.id)) {
-            color = COLOR_PATH;
-            border = "#b03a2e";
+            color = "#b91c1c"; // red
+            border = "#f87171";
             shadow = true;
+            glow = true;
           } else if (expanding === node.id) {
-            color = COLOR_EXPANDING;
-            border = "#bfa900";
+            color = "#b45309"; // amber
+            border = "#fde68a";
             shadow = true;
+            glow = true;
           } else if (visited.includes(node.id)) {
-            color = COLOR_VISITED;
-            border = "#27ae60";
+            color = "#166534"; // green
+            border = "#6ee7b7";
+            shadow = false;
+            glow = false;
           }
+
+          // Node background (rounded rectangle, dark mode)
+          const w = 28, // thinner, smaller node
+            h = 12,
+            r = 5;
           ctx.save();
-          if (shadow) {
-            ctx.shadowColor = "rgba(0,0,0,0.18)";
-            ctx.shadowBlur = 8;
+          if (shadow || glow) {
+            ctx.shadowColor = glow ? "#fff6" : "#0006";
+            ctx.shadowBlur = glow ? 8 : 4;
           }
           ctx.beginPath();
-          ctx.arc(node.x, node.y, 13, 0, 2 * Math.PI, false);
-          ctx.fillStyle = color;
-          ctx.fill();
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = border;
-          ctx.stroke();
-          ctx.restore();
-          ctx.font = `bold ${14 / globalScale}px sans-serif`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillStyle = "#222";
-          ctx.fillText(label, node.x, node.y - 2);
-          // Heuristic badge
-          const badgeW = 28,
-            badgeH = 16,
-            badgeR = 8;
-          ctx.save();
-          ctx.beginPath();
-          ctx.moveTo(node.x - badgeW / 2 + badgeR, node.y + 15);
-          ctx.lineTo(node.x + badgeW / 2 - badgeR, node.y + 15);
+          ctx.moveTo(node.x - w / 2 + r, node.y - h / 2);
+          ctx.lineTo(node.x + w / 2 - r, node.y - h / 2);
           ctx.quadraticCurveTo(
-            node.x + badgeW / 2,
-            node.y + 15,
-            node.x + badgeW / 2,
-            node.y + 15 + badgeR
+            node.x + w / 2,
+            node.y - h / 2,
+            node.x + w / 2,
+            node.y - h / 2 + r
           );
-          ctx.lineTo(node.x + badgeW / 2, node.y + 15 + badgeH - badgeR);
+          ctx.lineTo(node.x + w / 2, node.y + h / 2 - r);
           ctx.quadraticCurveTo(
-            node.x + badgeW / 2,
-            node.y + 15 + badgeH,
-            node.x + badgeW / 2 - badgeR,
-            node.y + 15 + badgeH
+            node.x + w / 2,
+            node.y + h / 2,
+            node.x + w / 2 - r,
+            node.y + h / 2
           );
-          ctx.lineTo(node.x - badgeW / 2 + badgeR, node.y + 15 + badgeH);
+          ctx.lineTo(node.x - w / 2 + r, node.y + h / 2);
           ctx.quadraticCurveTo(
-            node.x - badgeW / 2,
-            node.y + 15 + badgeH,
-            node.x - badgeW / 2,
-            node.y + 15 + badgeH - badgeR
+            node.x - w / 2,
+            node.y + h / 2,
+            node.x - w / 2,
+            node.y + h / 2 - r
           );
-          ctx.lineTo(node.x - badgeW / 2, node.y + 15 + badgeR);
+          ctx.lineTo(node.x - w / 2, node.y - h / 2 + r);
           ctx.quadraticCurveTo(
-            node.x - badgeW / 2,
-            node.y + 15,
-            node.x - badgeW / 2 + badgeR,
-            node.y + 15
+            node.x - w / 2,
+            node.y - h / 2,
+            node.x - w / 2 + r,
+            node.y - h / 2
           );
           ctx.closePath();
-          ctx.fillStyle = "#f3f3f3";
-          ctx.strokeStyle = "#bbb";
-          ctx.lineWidth = 1.5;
+          ctx.fillStyle = color;
+          ctx.globalAlpha = 0.98;
           ctx.fill();
+          ctx.lineWidth = 1.1; // thinner border
+          ctx.strokeStyle = border;
+          ctx.globalAlpha = 1;
           ctx.stroke();
-          ctx.font = `bold ${11 / globalScale}px sans-serif`;
-          ctx.fillStyle = "#7d6608";
+          ctx.restore();
+
+          // City name (bold, light text)
+          ctx.save();
+          ctx.font = `bold ${8.5 / globalScale}px Inter, Arial, sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(`h=${node.h}`, node.x, node.y + 15 + badgeH / 2);
+          ctx.fillStyle = "#f3f6fa";
+          ctx.shadowColor = "#000a";
+          ctx.shadowBlur = 1;
+          ctx.fillText(label, node.x, node.y - 1);
+          ctx.restore();
+
+          // Heuristic badge (dark mode, neon accent, thinner)
+          const badgeW = 13,
+            badgeH = 6,
+            badgeR = 2;
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(node.x - badgeW / 2 + badgeR, node.y + h / 2 + 2);
+          ctx.lineTo(node.x + badgeW / 2 - badgeR, node.y + h / 2 + 2);
+          ctx.quadraticCurveTo(
+            node.x + badgeW / 2,
+            node.y + h / 2 + 2,
+            node.x + badgeW / 2,
+            node.y + h / 2 + 2 + badgeR
+          );
+          ctx.lineTo(node.x + badgeW / 2, node.y + h / 2 + 2 + badgeH - badgeR);
+          ctx.quadraticCurveTo(
+            node.x + badgeW / 2,
+            node.y + h / 2 + 2 + badgeH,
+            node.x + badgeW / 2 - badgeR,
+            node.y + h / 2 + 2 + badgeH
+          );
+          ctx.lineTo(node.x - badgeW / 2 + badgeR, node.y + h / 2 + 2 + badgeH);
+          ctx.quadraticCurveTo(
+            node.x - badgeW / 2,
+            node.y + h / 2 + 2 + badgeH,
+            node.x - badgeW / 2,
+            node.y + h / 2 + 2 + badgeH - badgeR
+          );
+          ctx.lineTo(node.x - badgeW / 2, node.y + h / 2 + 2 + badgeR);
+          ctx.quadraticCurveTo(
+            node.x - badgeW / 2,
+            node.y + h / 2 + 2,
+            node.x - badgeW / 2 + badgeR,
+            node.y + h / 2 + 2
+          );
+          ctx.closePath();
+          ctx.fillStyle = "#18181b";
+          ctx.strokeStyle = "#38bdf8";
+          ctx.lineWidth = 0.8; // thinner border
+          ctx.globalAlpha = 0.92;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.shadowColor = "#38bdf866";
+          ctx.shadowBlur = 2;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.font = `bold ${5 / globalScale}px Inter, Arial, sans-serif`;
+          ctx.fillStyle = "#38bdf8";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(`h=${node.h}`, node.x, node.y + h / 2 + 2 + badgeH / 2);
           ctx.restore();
         }}
         linkColor={(l) => (pathLinks.includes(l) ? COLOR_PATH : "#bbb")}
-        linkWidth={(l) => (pathLinks.includes(l) ? 4 : 1.5)}
         linkCanvasObjectMode={() => "after"}
         linkCanvasObject={(link, ctx, globalScale) => {
           const start =
@@ -198,8 +271,6 @@ function GraphVisualizer({
           ctx.fillText(txt, midX, midY);
           ctx.restore();
         }}
-        width={700}
-        height={400}
       />
     </div>
   );
