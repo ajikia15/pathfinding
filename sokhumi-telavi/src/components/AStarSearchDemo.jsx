@@ -55,74 +55,59 @@ function AStarSearchDemo() {
   const [graph, setGraph] = useState(defaultGraph);
   const [startNode, setStartNode] = useState("Telavi");
   const [endNode, setEndNode] = useState("Sokhumi");
-  const [path, setPath] = useState([]);
-  const [pathCost, setPathCost] = useState(0);
-  const [stepCosts, setStepCosts] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [animStep, setAnimStep] = useState(-1); // -1 = idle
-  const [animating, setAnimating] = useState(false);
-  const [stepCounter, setStepCounter] = useState(0);
-  const [visited, setVisited] = useState([]); // nodes visited in order
-  const [expanding, setExpanding] = useState(null); // current node being expanded
-  const animTimeout = useRef();
+  const [trace, setTrace] = useState(null); // {path, stepCosts, expandedNodes, explanations}
+  const [step, setStep] = useState(0);
+  const [finished, setFinished] = useState(false);
 
-  // Animate the path step by step, including visited/expanding
+  // On search, run A* and store the trace
   const handleSearch = () => {
-    setIsSearching(true);
-    setAnimating(false);
-    setAnimStep(-1);
-    setPath([]);
-    setStepCosts([]);
-    setPathCost(0);
-    setStepCounter(0);
-    setVisited([]);
-    setExpanding(null);
-    const result = findPathAStar(graph, startNode, endNode, true); // pass true for animation
-    if (!result.path.length) {
-      setPath([]);
-      setStepCosts([]);
-      setPathCost(0);
-      setIsSearching(false);
-      setStepCounter(0);
-      setVisited([]);
-      setExpanding(null);
-      return;
-    }
-    setAnimating(true);
-    setAnimStep(0);
-    setStepCosts([]);
-    setPath([]);
-    setStepCounter(1);
-    setVisited([]);
-    setExpanding(null);
-    // Animate steps
-    let i = 0;
-    function animateStep() {
-      setPath(result.path.slice(0, i + 1));
-      setStepCosts(result.stepCosts.slice(0, i + 1));
-      setStepCounter(i + 1);
-      setVisited(result.expandedNodes.slice(0, i));
-      setExpanding(result.expandedNodes[i]);
-      if (i === result.path.length - 1) {
-        setPathCost(result.stepCosts[result.stepCosts.length - 1].total);
-        setIsSearching(false);
-        setAnimating(false);
-        setAnimStep(-1);
-        setExpanding(null);
-        setVisited(result.expandedNodes);
-        return;
-      }
-      setAnimStep(i);
-      i++;
-      animTimeout.current = setTimeout(animateStep, 700);
-    }
-    animateStep();
+    const result = findPathAStar(graph, startNode, endNode, true);
+    setTrace(result);
+    setStep(0);
+    setFinished(false);
   };
 
-  // Cleanup timeout on unmount or rerun
-  useEffect(() => {
-    return () => animTimeout.current && clearTimeout(animTimeout.current);
-  }, []);
+  // Next step handler
+  const handleNextStep = () => {
+    if (!trace) return;
+    if (step < trace.expandedNodes.length - 1) {
+      setStep(step + 1);
+    } else {
+      setFinished(true);
+    }
+  };
+
+  // Run all steps automatically
+  const handleRunAll = () => {
+    if (!trace) return;
+    let i = step;
+    setFinished(false);
+    function runNext() {
+      if (i < trace.expandedNodes.length - 1) {
+        setStep(s => s + 1);
+        i++;
+        setTimeout(runNext, 700);
+      } else {
+        setFinished(true);
+      }
+    }
+    runNext();
+  };
+
+  // Reset handler
+  const handleReset = () => {
+    setTrace(null);
+    setStep(0);
+    setFinished(false);
+  };
+
+  // Step data for current step
+  const visited = trace ? trace.expandedNodes.slice(0, step) : [];
+  const expanding = trace ? trace.expandedNodes[step] : null;
+  const path = trace && trace.path ? (finished ? trace.path : []) : [];
+  const stepCosts = trace && trace.stepCosts ? trace.stepCosts.slice(0, step + 1) : [];
+  const pathCost = trace && finished ? calcPathCost(trace.path, graph.links) : 0;
+  const explanation = trace && trace.explanations ? trace.explanations[step] : null;
 
   return (
     <div>
@@ -135,11 +120,20 @@ function AStarSearchDemo() {
         endNode={endNode}
         setEndNode={setEndNode}
         handleSearch={handleSearch}
-        isSearching={isSearching || animating}
+        isSearching={!!trace && !finished}
+        nextStepMode={true}
+        onNextStep={handleNextStep}
+        onReset={handleReset}
+        canNext={trace && step < trace.expandedNodes.length}
+        canReset={!!trace}
+        onRunAll={handleRunAll}
       />
-      <div style={{ marginBottom: 8, fontWeight: "bold", fontSize: "1.1em" }}>
-        Step: {stepCounter}
-      </div>
+      <div style={{marginBottom: 8, fontWeight: 'bold', fontSize: '1.1em'}}>Step: {trace ? step + 1 : 0}</div>
+      {explanation && (
+        <div className="card" style={{marginBottom: 18, background: 'rgba(40,40,50,0.92)', color: '#b0b0c3', fontSize: '1.08em'}}>
+          <b>Step Explanation:</b> {explanation}
+        </div>
+      )}
       <GraphVisualizer
         graph={graph}
         path={path}

@@ -19,6 +19,7 @@ export function findPathAStar(graph, startId, goalId) {
   const fScore = Object.fromEntries(graph.nodes.map((n) => [n.id, Infinity]));
   fScore[startId] = nodes[startId].h;
   const expandedNodes = [];
+  const explanations = [];
   while (openSet.size) {
     let current = null;
     let minF = Infinity;
@@ -28,6 +29,21 @@ export function findPathAStar(graph, startId, goalId) {
         current = n;
       }
     }
+    // Explanation for this step
+    let explain = `Expanding node ${current} (f=${fScore[current]}) because it has the lowest f-score in open set.`;
+    const updated = [];
+    for (let { id: neighbor, cost } of neighbors[current]) {
+      const tentativeG = gScore[current] + cost;
+      if (tentativeG < gScore[neighbor]) {
+        updated.push(`${neighbor} (g=${tentativeG}, h=${nodes[neighbor].h}, f=${tentativeG + nodes[neighbor].h})`);
+      }
+    }
+    if (updated.length) {
+      explain += ` Updated/added neighbors: ${updated.join(', ')}.`;
+    } else {
+      explain += ` No neighbors updated.`;
+    }
+    explanations.push(explain);
     expandedNodes.push(current);
     if (current === goalId) {
       // reconstruct path
@@ -56,7 +72,7 @@ export function findPathAStar(graph, startId, goalId) {
         total += added;
         stepCosts.push({ total, added, formula });
       }
-      return { path, stepCosts, expandedNodes };
+      return { path, stepCosts, expandedNodes, explanations };
     }
     openSet.delete(current);
     for (let { id: neighbor, cost } of neighbors[current]) {
@@ -69,7 +85,7 @@ export function findPathAStar(graph, startId, goalId) {
       }
     }
   }
-  return { path: [], stepCosts: [], expandedNodes };
+  return { path: [], stepCosts: [], expandedNodes, explanations };
 }
 
 export function calcPathCost(path, links) {
