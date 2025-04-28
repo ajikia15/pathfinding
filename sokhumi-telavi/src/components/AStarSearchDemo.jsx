@@ -51,8 +51,25 @@ const defaultGraph = {
   ],
 };
 
+const CANVAS_WIDTH = Math.max(window.innerWidth * 0.98 - 400, 600);
+const CANVAS_HEIGHT = Math.max(window.innerHeight * 0.7, 400);
+
+function centerGraphNodes(graph) {
+  // Center all nodes in the middle of the canvas if not already positioned
+  const centerX = CANVAS_WIDTH / 2;
+  const centerY = CANVAS_HEIGHT / 2;
+  return {
+    ...graph,
+    nodes: graph.nodes.map((n) => ({
+      ...n,
+      x: n.x !== undefined ? n.x : centerX + (Math.random() - 0.5) * 40,
+      y: n.y !== undefined ? n.y : centerY + (Math.random() - 0.5) * 40,
+    })),
+  };
+}
+
 function AStarSearchDemo() {
-  const [graph, setGraph] = useState(defaultGraph);
+  const [graph, setGraph] = useState(centerGraphNodes(defaultGraph));
   const [startNode, setStartNode] = useState("Telavi");
   const [endNode, setEndNode] = useState("Sokhumi");
   const [trace, setTrace] = useState(null); // {path, stepCosts, expandedNodes, explanations}

@@ -31,8 +31,6 @@ function GraphVisualizer({
       fgRef.current.d3Force("center").strength(0.1); // Centering
       fgRef.current.d3Force("link").distance(80); // Closer nodes
       fgRef.current.d3ReheatSimulation();
-      // Only zoom to fit on first mount or when node count changes
-      fgRef.current.zoomToFit(200, 80);
     }
   }, [graph.nodes.length]);
 
@@ -52,7 +50,19 @@ function GraphVisualizer({
   }
 
   return (
-    <div className="graph-area">
+    <div
+      className="graph-area"
+      style={{
+        width: "100%",
+        minWidth: 0,
+        overflow: "hidden",
+        padding: 0,
+        margin: 0,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
       <ForceGraph2D
         ref={fgRef}
         graphData={graph}
@@ -61,8 +71,8 @@ function GraphVisualizer({
         nodeRelSize={5}
         d3VelocityDecay={0.35}
         linkWidth={(l) => (pathLinks.has(l) ? 3 : 1.2)}
-        width={window.innerWidth > 1200 ? 1200 : window.innerWidth - 60}
-        height={600}
+        width={Math.max(window.innerWidth * 0.98 - 400, 600)}
+        height={Math.max(window.innerHeight * 0.7, 400)}
         nodeCanvasObject={(node, ctx, globalScale) => {
           // --- Use old style: white circle, colored border, label above, heuristic below ---
           const label = node.id;
