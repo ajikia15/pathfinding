@@ -137,6 +137,7 @@ html,
   box-sizing: border-box;
   background: var(--bg-primary); /* Ensure padding area is dark */
   overflow-x: hidden;
+  margin-top: 20px;
 }
 
 .logo {
@@ -173,7 +174,6 @@ html,
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border-color);
   padding: 20px; /* Consistent padding */
-  margin-bottom: 20px; /* Consistent margin */
   width: 100%;
   box-sizing: border-box;
 }
@@ -380,7 +380,6 @@ html,
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 20px; /* Use card padding */
 }
 .controls-selects {
   display: flex;
@@ -480,7 +479,7 @@ html,
     max-width: 100vw;
     height: auto;
     max-height: 50vh;
-    padding-right: 0;
+    padding-left: 16px;
   }
   .astar-main {
     width: 100%;
@@ -596,7 +595,7 @@ html,
   gap: 20px; /* Gap between cards in sidebar */
   height: calc(100vh - 160px); /* Adjust based on header/footer/padding */
   overflow-y: auto; /* Scroll if content overflows */
-  padding-right: 8px; /* Space for scrollbar */
+  padding-inline: 16px; /* Space for scrollbar */
 }
 
 /* Custom scrollbar for sidebar */
