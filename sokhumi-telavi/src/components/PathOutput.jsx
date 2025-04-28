@@ -3,10 +3,13 @@ import React from "react";
 function PathOutput({ path, pathCost }) {
   if (!path || path.length === 0) return null;
   return (
-    <div className="output card">
-      <h3>Path Output</h3>
-      <div>{path.join(" → ")}</div>
-      <div className="path-cost">Total Cost: {pathCost}</div>
+    // Use the standard card class and specific section class
+    <div className="card output-section">
+      <h4>Final Path Found</h4>
+      <div className="path-output-content">
+        <div className="path-string">{path.join(" → ")}</div>
+        <div className="path-cost">Total Cost: {pathCost}</div>
+      </div>
     </div>
   );
 }

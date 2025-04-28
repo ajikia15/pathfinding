@@ -1,6 +1,6 @@
 // src/algorithms/astar.js
 // Returns { path, stepCosts }
-export function findPathAStar(graph, startId, goalId) {
+export function findPathAStar(graph, startId, goalId, trace = false) {
   const nodes = Object.fromEntries(graph.nodes.map((n) => [n.id, n]));
   const links = graph.links;
   const neighbors = {};
@@ -12,80 +12,92 @@ export function findPathAStar(graph, startId, goalId) {
     neighbors[source]?.push({ id: target, cost: l.cost });
     neighbors[target]?.push({ id: source, cost: l.cost });
   });
-  const openSet = new Set([startId]);
+
+  const openSet = new Map(); // Use Map for easier fScore retrieval: [nodeId, fScore]
+  openSet.set(startId, nodes[startId].h);
+
   const cameFrom = {};
   const gScore = Object.fromEntries(graph.nodes.map((n) => [n.id, Infinity]));
   gScore[startId] = 0;
   const fScore = Object.fromEntries(graph.nodes.map((n) => [n.id, Infinity]));
   fScore[startId] = nodes[startId].h;
+
   const expandedNodes = [];
   const explanations = [];
-  while (openSet.size) {
+  const stepCosts = []; // Store costs at each step
+
+  while (openSet.size > 0) {
+    // Find node with lowest fScore in openSet
     let current = null;
     let minF = Infinity;
-    for (let n of openSet) {
-      if (fScore[n] < minF) {
-        minF = fScore[n];
-        current = n;
+    for (let [nodeId, fVal] of openSet) {
+      if (fVal < minF) {
+        minF = fVal;
+        current = nodeId;
       }
     }
-    // Explanation for this step
-    let explain = `Expanding node ${current} (f=${fScore[current]}) because it has the lowest f-score in open set.`;
-    const updated = [];
-    for (let { id: neighbor, cost } of neighbors[current]) {
-      const tentativeG = gScore[current] + cost;
-      if (tentativeG < gScore[neighbor]) {
-        updated.push(`${neighbor} (g=${tentativeG}, h=${nodes[neighbor].h}, f=${tentativeG + nodes[neighbor].h})`);
+
+    if (current === null) break; // Should not happen if goal is reachable
+
+    // --- Tracing ---
+    if (trace) {
+      expandedNodes.push(current);
+      stepCosts.push({
+        nodeId: current,
+        g: gScore[current],
+        h: nodes[current].h,
+        f: fScore[current],
+      });
+      let explain = `Expanding node ${current} (f=${fScore[current].toFixed(
+        1
+      )}) because it has the lowest f-score in the open set. Open set: [${Array.from(
+        openSet.keys()
+      ).join(", ")}].`;
+      const updatedNeighbors = [];
+      for (let { id: neighbor, cost } of neighbors[current]) {
+        const tentativeG = gScore[current] + cost;
+        if (tentativeG < gScore[neighbor]) {
+          const neighborF = tentativeG + nodes[neighbor].h;
+          updatedNeighbors.push(`${neighbor}(f=${neighborF.toFixed(1)})`);
+        }
       }
+      if (updatedNeighbors.length > 0) {
+        explain += ` Neighbors considered for update/add: ${updatedNeighbors.join(
+          ", "
+        )}.`;
+      }
+      explanations.push(explain);
     }
-    if (updated.length) {
-      explain += ` Updated/added neighbors: ${updated.join(', ')}.`;
-    } else {
-      explain += ` No neighbors updated.`;
-    }
-    explanations.push(explain);
-    expandedNodes.push(current);
+    // --- End Tracing ---
+
     if (current === goalId) {
-      // reconstruct path
+      // Reconstruct path
       const path = [current];
-      while (cameFrom[current]) {
-        current = cameFrom[current];
-        path.push(current);
+      let temp = current;
+      while (cameFrom[temp]) {
+        temp = cameFrom[temp];
+        path.push(temp);
       }
       path.reverse();
-      // step-by-step cost breakdown
-      const stepCosts = [];
-      let total = 0;
-      for (let i = 0; i < path.length; ++i) {
-        let added = 0;
-        if (i > 0) {
-          const a = path[i - 1],
-            b = path[i];
-          const link = links.find((l) => {
-            const src = typeof l.source === "object" ? l.source.id : l.source;
-            const tgt = typeof l.target === "object" ? l.target.id : l.target;
-            return (src === a && tgt === b) || (src === b && tgt === a);
-          });
-          added = link ? link.cost : 0;
-        }
-        const formula = `${total} + ${added} = ${total + added}`;
-        total += added;
-        stepCosts.push({ total, added, formula });
-      }
       return { path, stepCosts, expandedNodes, explanations };
     }
+
     openSet.delete(current);
+
     for (let { id: neighbor, cost } of neighbors[current]) {
       const tentativeG = gScore[current] + cost;
       if (tentativeG < gScore[neighbor]) {
+        // This path to neighbor is better than any previous one. Record it!
         cameFrom[neighbor] = current;
         gScore[neighbor] = tentativeG;
         fScore[neighbor] = tentativeG + nodes[neighbor].h;
-        openSet.add(neighbor);
+        openSet.set(neighbor, fScore[neighbor]); // Add/update in openSet
       }
     }
   }
-  return { path: [], stepCosts: [], expandedNodes, explanations };
+
+  // Goal was never reached
+  return { path: [], stepCosts, expandedNodes, explanations };
 }
 
 export function calcPathCost(path, links) {

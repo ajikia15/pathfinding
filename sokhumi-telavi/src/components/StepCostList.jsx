@@ -3,15 +3,24 @@ import React from "react";
 function StepCostList({ stepCosts }) {
   if (!stepCosts || stepCosts.length === 0) return null;
   return (
-    <div className="step-costs card">
-      <h4>Step-by-step Cost Calculation</h4>
-      {stepCosts.map((step, idx) => (
-        <div key={idx}>
-          Step: {idx + 1} &nbsp; Cost: {step.total} (
-          <span style={{ color: "#888" }}>+{step.added}</span>) &nbsp;
-          <span style={{ color: "#888" }}>{step.formula}</span>
-        </div>
-      ))}
+    // Use the standard card class and specific section class
+    <div className="card step-cost-section">
+      <h4>Step Cost Calculation</h4>
+      <div className="step-cost-list">
+        {stepCosts.map((step, idx) => (
+          <div key={idx}>
+            Step {idx + 1}: Node{" "}
+            <span style={{ fontWeight: 500, color: "var(--text-primary)" }}>
+              {step.nodeId}
+            </span>{" "}
+            &nbsp; f = <span className="cost-value">{step.f}</span> (g=
+            <span className="cost-value">{step.g}</span> + h=
+            <span className="cost-value">{step.h}</span>)
+            {/* Optional: Add formula back if needed */}
+            {/* <span className="formula">{step.formula}</span> */}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

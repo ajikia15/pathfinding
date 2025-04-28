@@ -58,9 +58,13 @@ function AStarSearchDemo() {
   const [trace, setTrace] = useState(null); // {path, stepCosts, expandedNodes, explanations}
   const [step, setStep] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [isAutoRunning, setIsAutoRunning] = useState(false);
+  const autoRunTimeoutRef = useRef(null);
 
   // On search, run A* and store the trace
   const handleSearch = () => {
+    if (autoRunTimeoutRef.current) clearTimeout(autoRunTimeoutRef.current);
+    setIsAutoRunning(false);
     const result = findPathAStar(graph, startNode, endNode, true);
     setTrace(result);
     setStep(0);
@@ -69,9 +73,13 @@ function AStarSearchDemo() {
 
   // Next step handler
   const handleNextStep = () => {
-    if (!trace) return;
+    if (!trace || isAutoRunning) return;
     if (step < trace.expandedNodes.length - 1) {
       setStep(step + 1);
+    } else if (step === trace.expandedNodes.length - 1) {
+      // Last expansion step, now show the final path
+      setStep(step + 1);
+      setFinished(true);
     } else {
       setFinished(true);
     }
@@ -79,71 +87,140 @@ function AStarSearchDemo() {
 
   // Run all steps automatically
   const handleRunAll = () => {
-    if (!trace) return;
-    let i = step;
-    setFinished(false);
+    if (!trace || isAutoRunning || finished) return;
+    setIsAutoRunning(true);
+    let currentStep = step;
+
     function runNext() {
-      if (i < trace.expandedNodes.length - 1) {
-        setStep(s => s + 1);
-        i++;
-        setTimeout(runNext, 700);
+      if (currentStep < trace.expandedNodes.length - 1) {
+        setStep((s) => s + 1);
+        currentStep++;
+        autoRunTimeoutRef.current = setTimeout(runNext, 700);
       } else {
+        // After last expansion, do one more step to show final path
+        setStep((s) => s + 1);
         setFinished(true);
+        setIsAutoRunning(false);
+        autoRunTimeoutRef.current = null;
       }
     }
-    runNext();
+
+    // If starting from beginning or after reset, initiate search first if needed
+    if (!trace) {
+      handleSearch(); // This resets step to 0
+      // Need a slight delay to allow state update before starting auto-run
+      setTimeout(() => {
+        // Re-check trace exists after handleSearch
+        if (findPathAStar(graph, startNode, endNode, true)) {
+          runNext();
+        } else {
+          setIsAutoRunning(false); // Handle case where search fails
+        }
+      }, 50);
+    } else {
+      runNext();
+    }
   };
 
   // Reset handler
   const handleReset = () => {
+    if (autoRunTimeoutRef.current) clearTimeout(autoRunTimeoutRef.current);
+    setIsAutoRunning(false);
     setTrace(null);
     setStep(0);
     setFinished(false);
   };
 
-  // Step data for current step
+  // Stop auto run handler
+  const handleStop = () => {
+    if (autoRunTimeoutRef.current) clearTimeout(autoRunTimeoutRef.current);
+    setIsAutoRunning(false);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoRunTimeoutRef.current) clearTimeout(autoRunTimeoutRef.current);
+    };
+  }, []);
+
+  // Calculate state for visualization based on current step
+  const isSearching = !!trace && !finished;
+  const canNext = trace && step < trace.expandedNodes.length;
+  const canReset = !!trace || isAutoRunning;
+  const canRunAll = trace ? step < trace.expandedNodes.length : true; // Can always run if not started
+
   const visited = trace ? trace.expandedNodes.slice(0, step) : [];
-  const expanding = trace ? trace.expandedNodes[step] : null;
-  const path = trace && trace.path ? (finished ? trace.path : []) : [];
-  const stepCosts = trace && trace.stepCosts ? trace.stepCosts.slice(0, step + 1) : [];
-  const pathCost = trace && finished ? calcPathCost(trace.path, graph.links) : 0;
-  const explanation = trace && trace.explanations ? trace.explanations[step] : null;
+  const expanding =
+    trace && step < trace.expandedNodes.length
+      ? trace.expandedNodes[step]
+      : null;
+  const path = trace && finished ? trace.path : [];
+  const stepCosts = trace ? trace.stepCosts.slice(0, step) : []; // Show costs up to the node *before* expansion
+  const pathCost =
+    trace && finished ? calcPathCost(trace.path, graph.links) : 0;
+  const explanation =
+    trace && trace.explanations && step < trace.explanations.length
+      ? trace.explanations[step]
+      : null;
 
   return (
-    <div>
-      <Legend />
-      <GraphSearchPanel
-        graph={graph}
-        setGraph={setGraph}
-        startNode={startNode}
-        setStartNode={setStartNode}
-        endNode={endNode}
-        setEndNode={setEndNode}
-        handleSearch={handleSearch}
-        isSearching={!!trace && !finished}
-        nextStepMode={true}
-        onNextStep={handleNextStep}
-        onReset={handleReset}
-        canNext={trace && step < trace.expandedNodes.length}
-        canReset={!!trace}
-        onRunAll={handleRunAll}
-      />
-      <div style={{marginBottom: 8, fontWeight: 'bold', fontSize: '1.1em'}}>Step: {trace ? step + 1 : 0}</div>
-      {explanation && (
-        <div className="card" style={{marginBottom: 18, background: 'rgba(40,40,50,0.92)', color: '#b0b0c3', fontSize: '1.08em'}}>
-          <b>Step Explanation:</b> {explanation}
+    <div className="astar-layout">
+      {" "}
+      {/* Use the new two-column layout class */}
+      <aside className="astar-sidebar">
+        {" "}
+        {/* Sidebar column */}
+        <Legend />
+        <GraphSearchPanel
+          graph={graph}
+          startNode={startNode}
+          setStartNode={setStartNode}
+          endNode={endNode}
+          setEndNode={setEndNode}
+          handleSearch={handleSearch} // Initial search trigger
+          isSearching={isSearching} // Overall searching state
+          isAutoRunning={isAutoRunning}
+          onNextStep={handleNextStep}
+          onReset={handleReset}
+          canNext={canNext && !isAutoRunning} // Disable next when auto-running
+          canReset={canReset}
+          onRunAll={handleRunAll}
+          canRunAll={canRunAll && !isAutoRunning} // Disable run all when already running
+          onStop={handleStop}
+        />
+        <div className="card step-section">
+          {" "}
+          {/* Step counter card */}
+          <h4>Current Step</h4>
+          <div className="step-label">
+            Step: {trace ? step + 1 : 0} /{" "}
+            {trace ? trace.expandedNodes.length + 1 : 1}
+          </div>
         </div>
-      )}
-      <GraphVisualizer
-        graph={graph}
-        path={path}
-        visited={visited}
-        expanding={expanding}
-        startNode={startNode}
-        endNode={endNode}
-      />
-      <StepCostList stepCosts={stepCosts} />
-      <PathOutput path={path} pathCost={pathCost} />
+        {explanation && (
+          <div className="card explanation-section">
+            {" "}
+            {/* Explanation card */}
+            <h4>Step Explanation</h4>
+            <p className="explanation-content">{explanation}</p>
+          </div>
+        )}
+        {stepCosts.length > 0 && <StepCostList stepCosts={stepCosts} />}
+        {path.length > 0 && <PathOutput path={path} pathCost={pathCost} />}
+      </aside>
+      <section className="astar-main">
+        {" "}
+        {/* Main content column */}
+        <GraphVisualizer
+          graph={graph}
+          path={path}
+          visited={visited}
+          expanding={expanding}
+          startNode={startNode}
+          endNode={endNode}
+        />
+      </section>
     </div>
   );
 }

@@ -1,12 +1,17 @@
 import React, { useRef, useEffect } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 
-const COLOR_PATH = "#e74c3c";
-const COLOR_EXPANDING = "#ffe066";
-const COLOR_VISITED = "#b6fcb6";
-const COLOR_START = "#3498db";
-const COLOR_GOAL = "#9b59b6";
-const COLOR_DEFAULT = "#fff";
+// Use theme colors defined in App.css
+const COLOR_PATH = "#ef4444"; // var(--danger)
+const COLOR_EXPANDING = "#f59e0b"; // var(--warning)
+const COLOR_VISITED = "#22c55e"; // var(--success)
+const COLOR_START_GOAL = "#6366f1"; // var(--info)
+const COLOR_DEFAULT_NODE_BG = "#2a2a2a"; // var(--bg-tertiary)
+const COLOR_DEFAULT_NODE_BORDER = "#383838"; // var(--border-color)
+const COLOR_DEFAULT_LINK = "#6b7280"; // gray-500
+const COLOR_TEXT_NODE = "#e0e0e0"; // var(--text-primary)
+const COLOR_TEXT_HEURISTIC = "#0ea5e9"; // var(--accent-primary)
+const COLOR_TEXT_LINK = "#121212"; // var(--bg-primary)
 
 function GraphVisualizer({
   graph,
@@ -17,24 +22,22 @@ function GraphVisualizer({
   endNode = null,
 }) {
   const fgRef = useRef();
-  useEffect(() => {
-    if (fgRef.current) fgRef.current.refresh();
-  }, [path, visited, expanding, startNode, endNode]);
 
-  // Add this effect to increase node repulsion
+  // --- Combine old and new: Use more reasonable force settings and auto-zoom only on mount ---
   useEffect(() => {
     if (fgRef.current) {
-      fgRef.current.d3Force("charge").strength(-8000); // Max repulsion
-      fgRef.current.d3Force("center").strength(0.005); // Very weak centering
-      fgRef.current.d3Force("link").distance(220); // Moderate link distance
+      // Use more compact forces for better visibility
+      fgRef.current.d3Force("charge").strength(-350); // Less repulsion
+      fgRef.current.d3Force("center").strength(0.1); // Centering
+      fgRef.current.d3Force("link").distance(80); // Closer nodes
       fgRef.current.d3ReheatSimulation();
-      // Zoom out for better visibility
-      fgRef.current.zoomToFit(400, 80, (node) => true);
+      // Only zoom to fit on first mount or when node count changes
+      fgRef.current.zoomToFit(200, 80);
     }
-  }, [graph]); // Re-run when graph changes
+  }, [graph.nodes.length]);
 
-  // Highlight path links
-  const pathLinks = [];
+  // Identify links that are part of the final path
+  const pathLinks = new Set();
   if (path && path.length > 1) {
     for (let i = 0; i < path.length - 1; ++i) {
       const a = path[i],
@@ -44,173 +47,79 @@ function GraphVisualizer({
         const tgt = typeof l.target === "object" ? l.target.id : l.target;
         return (src === a && tgt === b) || (src === b && tgt === a);
       });
-      if (link) pathLinks.push(link);
+      if (link) pathLinks.add(link);
     }
   }
+
   return (
-    <div className="graph-area card">
+    <div className="graph-area">
       <ForceGraph2D
-        forceGraphRef={fgRef}
+        ref={fgRef}
         graphData={graph}
         nodeLabel={(n) => `${n.id} (h=${n.h})`}
         linkLabel={(l) => `cost=${l.cost}`}
-        nodeRelSize={5} // smaller node
-        d3VelocityDecay={0.18}
-        linkWidth={(l) => (pathLinks.includes(l) ? 5 : 2)} // thinner links
-        width={1600} // larger canvas
-        height={900}
+        nodeRelSize={5}
+        d3VelocityDecay={0.35}
+        linkWidth={(l) => (pathLinks.has(l) ? 3 : 1.2)}
+        width={window.innerWidth > 1200 ? 1200 : window.innerWidth - 60}
+        height={600}
         nodeCanvasObject={(node, ctx, globalScale) => {
-          // Stylish dark mode node design
+          // --- Use old style: white circle, colored border, label above, heuristic below ---
           const label = node.id;
-          let color = "#23272f"; // dark node background
-          let border = "#444";
-          let shadow = false;
-          let glow = false;
-          if (node.id === startNode) {
-            color = "#1e3a8a"; // blue
-            border = "#60a5fa";
-            shadow = true;
-            glow = true;
-          }
-          if (node.id === endNode) {
-            color = "#6d28d9"; // purple
-            border = "#c084fc";
-            shadow = true;
-            glow = true;
-          }
-          if (path.includes(node.id)) {
-            color = "#b91c1c"; // red
-            border = "#f87171";
-            shadow = true;
-            glow = true;
+          const fontSize = 12 / globalScale;
+          const nodeSize = 20;
+          let nodeColor = COLOR_DEFAULT_NODE_BG;
+          let borderColor = COLOR_DEFAULT_NODE_BORDER;
+          let textColor = COLOR_TEXT_NODE;
+          let hasGlow = false;
+          if (node.id === startNode || node.id === endNode) {
+            nodeColor = COLOR_START_GOAL;
+            borderColor = COLOR_START_GOAL;
+            hasGlow = true;
+          } else if (path.includes(node.id)) {
+            nodeColor = COLOR_PATH;
+            borderColor = COLOR_PATH;
+            hasGlow = true;
           } else if (expanding === node.id) {
-            color = "#b45309"; // amber
-            border = "#fde68a";
-            shadow = true;
-            glow = true;
+            nodeColor = COLOR_EXPANDING;
+            borderColor = COLOR_EXPANDING;
+            hasGlow = true;
           } else if (visited.includes(node.id)) {
-            color = "#166534"; // green
-            border = "#6ee7b7";
-            shadow = false;
-            glow = false;
+            nodeColor = COLOR_VISITED;
+            borderColor = COLOR_VISITED;
           }
-
-          // Node background (rounded rectangle, dark mode)
-          const w = 28, // thinner, smaller node
-            h = 12,
-            r = 5;
-          ctx.save();
-          if (shadow || glow) {
-            ctx.shadowColor = glow ? "#fff6" : "#0006";
-            ctx.shadowBlur = glow ? 8 : 4;
+          // Draw node circle
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, nodeSize / 2, 0, 2 * Math.PI, false);
+          ctx.fillStyle = nodeColor;
+          if (hasGlow) {
+            ctx.shadowColor = borderColor;
+            ctx.shadowBlur = 12;
           }
-          ctx.beginPath();
-          ctx.moveTo(node.x - w / 2 + r, node.y - h / 2);
-          ctx.lineTo(node.x + w / 2 - r, node.y - h / 2);
-          ctx.quadraticCurveTo(
-            node.x + w / 2,
-            node.y - h / 2,
-            node.x + w / 2,
-            node.y - h / 2 + r
-          );
-          ctx.lineTo(node.x + w / 2, node.y + h / 2 - r);
-          ctx.quadraticCurveTo(
-            node.x + w / 2,
-            node.y + h / 2,
-            node.x + w / 2 - r,
-            node.y + h / 2
-          );
-          ctx.lineTo(node.x - w / 2 + r, node.y + h / 2);
-          ctx.quadraticCurveTo(
-            node.x - w / 2,
-            node.y + h / 2,
-            node.x - w / 2,
-            node.y + h / 2 - r
-          );
-          ctx.lineTo(node.x - w / 2, node.y - h / 2 + r);
-          ctx.quadraticCurveTo(
-            node.x - w / 2,
-            node.y - h / 2,
-            node.x - w / 2 + r,
-            node.y - h / 2
-          );
-          ctx.closePath();
-          ctx.fillStyle = color;
-          ctx.globalAlpha = 0.98;
           ctx.fill();
-          ctx.lineWidth = 1.1; // thinner border
-          ctx.strokeStyle = border;
-          ctx.globalAlpha = 1;
-          ctx.stroke();
-          ctx.restore();
-
-          // City name (bold, light text)
-          ctx.save();
-          ctx.font = `bold ${8.5 / globalScale}px Inter, Arial, sans-serif`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillStyle = "#f3f6fa";
-          ctx.shadowColor = "#000a";
-          ctx.shadowBlur = 1;
-          ctx.fillText(label, node.x, node.y - 1);
-          ctx.restore();
-
-          // Heuristic badge (dark mode, neon accent, thinner)
-          const badgeW = 13,
-            badgeH = 6,
-            badgeR = 2;
-          ctx.save();
-          ctx.beginPath();
-          ctx.moveTo(node.x - badgeW / 2 + badgeR, node.y + h / 2 + 2);
-          ctx.lineTo(node.x + badgeW / 2 - badgeR, node.y + h / 2 + 2);
-          ctx.quadraticCurveTo(
-            node.x + badgeW / 2,
-            node.y + h / 2 + 2,
-            node.x + badgeW / 2,
-            node.y + h / 2 + 2 + badgeR
-          );
-          ctx.lineTo(node.x + badgeW / 2, node.y + h / 2 + 2 + badgeH - badgeR);
-          ctx.quadraticCurveTo(
-            node.x + badgeW / 2,
-            node.y + h / 2 + 2 + badgeH,
-            node.x + badgeW / 2 - badgeR,
-            node.y + h / 2 + 2 + badgeH
-          );
-          ctx.lineTo(node.x - badgeW / 2 + badgeR, node.y + h / 2 + 2 + badgeH);
-          ctx.quadraticCurveTo(
-            node.x - badgeW / 2,
-            node.y + h / 2 + 2 + badgeH,
-            node.x - badgeW / 2,
-            node.y + h / 2 + 2 + badgeH - badgeR
-          );
-          ctx.lineTo(node.x - badgeW / 2, node.y + h / 2 + 2 + badgeR);
-          ctx.quadraticCurveTo(
-            node.x - badgeW / 2,
-            node.y + h / 2 + 2,
-            node.x - badgeW / 2 + badgeR,
-            node.y + h / 2 + 2
-          );
-          ctx.closePath();
-          ctx.fillStyle = "#18181b";
-          ctx.strokeStyle = "#38bdf8";
-          ctx.lineWidth = 0.8; // thinner border
-          ctx.globalAlpha = 0.92;
-          ctx.fill();
-          ctx.globalAlpha = 1;
-          ctx.shadowColor = "#38bdf866";
-          ctx.shadowBlur = 2;
-          ctx.stroke();
+          ctx.shadowColor = "transparent";
           ctx.shadowBlur = 0;
-          ctx.font = `bold ${5 / globalScale}px Inter, Arial, sans-serif`;
-          ctx.fillStyle = "#38bdf8";
+          ctx.strokeStyle = borderColor;
+          ctx.lineWidth = 2 / globalScale;
+          ctx.stroke();
+          // Draw label above node
           ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(`h=${node.h}`, node.x, node.y + h / 2 + 2 + badgeH / 2);
-          ctx.restore();
+          ctx.textBaseline = "bottom";
+          ctx.font = `${fontSize}px Inter, sans-serif`;
+          ctx.fillStyle = textColor;
+          ctx.fillText(label, node.x, node.y - nodeSize / 2 - 2);
+          // Draw heuristic below node
+          ctx.textBaseline = "top";
+          ctx.font = `${fontSize * 0.9}px Inter, sans-serif`;
+          ctx.fillStyle = COLOR_TEXT_HEURISTIC;
+          ctx.fillText(`h=${node.h}`, node.x, node.y + nodeSize / 2 + 2);
         }}
-        linkColor={(l) => (pathLinks.includes(l) ? COLOR_PATH : "#bbb")}
+        linkColor={(l) => (pathLinks.has(l) ? COLOR_PATH : COLOR_DEFAULT_LINK)}
         linkCanvasObjectMode={() => "after"}
         linkCanvasObject={(link, ctx, globalScale) => {
+          // --- Use old style: cost label above the link ---
+          const fontSize = 8 / globalScale;
+          const label = `${link.cost}`;
           const start =
             typeof link.source === "object"
               ? link.source
@@ -219,57 +128,18 @@ function GraphVisualizer({
             typeof link.target === "object"
               ? link.target
               : graph.nodes.find((n) => n.id === link.target);
-          if (!start || !end) return;
-          const midX = (start.x + end.x) / 2;
-          const midY = (start.y + end.y) / 2;
-          const txt = `${link.cost}`;
-          ctx.save();
-          ctx.font = `bold ${11 / globalScale}px sans-serif`;
-          const textW = ctx.measureText(txt).width + 8;
-          const textH = 16;
-          ctx.globalAlpha = 0.85;
-          ctx.fillStyle = "#fff";
-          ctx.strokeStyle = "#bbb";
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(midX - textW / 2 + 6, midY - textH / 2);
-          ctx.lineTo(midX + textW / 2 - 6, midY - textH / 2);
-          ctx.quadraticCurveTo(
-            midX + textW / 2,
-            midY - textH / 2,
-            midX + textW / 2,
-            midY - textH / 2 + 6
-          );
-          ctx.lineTo(midX + textW / 2, midY + textH / 2 - 6);
-          ctx.quadraticCurveTo(
-            midX + textW / 2,
-            midY + textH / 2,
-            midX + textW / 2 - 6,
-            midY + textH / 2
-          );
-          ctx.lineTo(midX - textW / 2 + 6, midY + textH / 2);
-          ctx.quadraticCurveTo(
-            midX - textW / 2,
-            midY + textH / 2,
-            midX - textW / 2,
-            midY + textH / 2 - 6
-          );
-          ctx.lineTo(midX - textW / 2, midY - textH / 2 + 6);
-          ctx.quadraticCurveTo(
-            midX - textW / 2,
-            midY - textH / 2,
-            midX - textW / 2 + 6,
-            midY - textH / 2
-          );
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
-          ctx.globalAlpha = 1;
-          ctx.fillStyle = "#444";
+          if (!start || !end || !start.x || !end.x) return;
+          const textPos = {
+            x: start.x + (end.x - start.x) * 0.5,
+            y: start.y + (end.y - start.y) * 0.5 - 8 / globalScale,
+          };
+          ctx.font = `${fontSize}px Inter, sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(txt, midX, midY);
-          ctx.restore();
+          ctx.fillStyle = "rgba(255,255,255,0.85)";
+          ctx.fillRect(textPos.x - 10, textPos.y - fontSize, 20, fontSize * 2);
+          ctx.fillStyle = COLOR_TEXT_LINK;
+          ctx.fillText(label, textPos.x, textPos.y);
         }}
       />
     </div>
