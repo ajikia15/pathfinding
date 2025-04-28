@@ -45,7 +45,7 @@ const coordinateGraph = {
     { id: "Marneuli", x: 680, y: 280 },
     { id: "Dedoplistskaro", x: 820, y: 320 },
     { id: "Lagodekhi", x: 780, y: 80 },
-  ].map(n => ({ ...n, realX: n.x, realY: n.y })), // Store real coordinates
+  ].map((n) => ({ ...n, realX: n.x, realY: n.y })), // Store real coordinates
   links: [
     { source: "Telavi", target: "Sagarejo", cost: 30 },
     { source: "Sagarejo", target: "Tbilisi", cost: 50 },
