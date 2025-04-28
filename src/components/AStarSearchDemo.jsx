@@ -255,6 +255,8 @@ function AlgorithmSearchDemo() {
           setStartNode={setStartNode}
           endNode={endNode}
           setEndNode={setEndNode}
+          algorithm={algorithm}
+          setAlgorithm={setAlgorithm}
           handleSearch={handleSearch} // Initial search trigger
           isSearching={isSearching} // Overall searching state
           isAutoRunning={isAutoRunning}
@@ -268,19 +270,7 @@ function AlgorithmSearchDemo() {
           simulationSpeed={simulationSpeed}
           setSimulationSpeed={setSimulationSpeed}
         />
-        <div className="card">
-          <label htmlFor="algo-select">Algorithm:</label>
-          <select
-            id="algo-select"
-            value={algorithm}
-            onChange={(e) => setAlgorithm(e.target.value)}
-            disabled={isSearching || isAutoRunning}
-            style={{ width: "100%", marginBottom: 10 }}
-          >
-            <option value="astar">A* Search</option>
-            <option value="bidir_iddfs">Bidirectional IDDFS</option>
-          </select>
-        </div>
+        {/* Removed old algorithm selector card */}
         <div className="card step-section">
           {" "}
           {/* Step counter card */}

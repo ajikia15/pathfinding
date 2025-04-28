@@ -6,6 +6,8 @@ function GraphSearchPanel({
   setStartNode,
   endNode,
   setEndNode,
+  algorithm,
+  setAlgorithm,
   handleSearch,
   isSearching,
   isAutoRunning,
@@ -51,6 +53,30 @@ function GraphSearchPanel({
               </option>
             ))}
           </select>
+        </div>
+        {/* Algorithm Switcher */}
+        <div className="controls-select-group">
+          <label>Algorithm:</label>
+          <div className="tab-nav" style={{ marginTop: 4 }}>
+            <button
+              className={algorithm === "astar" ? "tab-btn active" : "tab-btn"}
+              onClick={() => setAlgorithm("astar")}
+              disabled={isSearching || isAutoRunning}
+              type="button"
+            >
+              A* Search
+            </button>
+            <button
+              className={
+                algorithm === "bidir_iddfs" ? "tab-btn active" : "tab-btn"
+              }
+              onClick={() => setAlgorithm("bidir_iddfs")}
+              disabled={isSearching || isAutoRunning}
+              type="button"
+            >
+              Bidirectional IDDFS
+            </button>
+          </div>
         </div>
       </div>
       {/* Simulation Speed Slider */}
