@@ -1,6 +1,12 @@
 // src/algorithms/astar.js
 // Returns { path, stepCosts }
-export function findPathAStar(graph, startId, goalId, trace = false) {
+export function findPathAStar(
+  graph,
+  startId,
+  goalId,
+  trace = false,
+  heuristic
+) {
   const nodes = Object.fromEntries(graph.nodes.map((n) => [n.id, n]));
   const links = graph.links;
   const neighbors = {};
@@ -13,18 +19,20 @@ export function findPathAStar(graph, startId, goalId, trace = false) {
     neighbors[target]?.push({ id: source, cost: l.cost });
   });
 
-  const openSet = new Map(); // Use Map for easier fScore retrieval: [nodeId, fScore]
-  openSet.set(startId, nodes[startId].h);
+  // Use dynamic heuristic
+  const goalNode = nodes[goalId];
+  const openSet = new Map();
+  openSet.set(startId, heuristic(nodes[startId], goalNode));
 
   const cameFrom = {};
   const gScore = Object.fromEntries(graph.nodes.map((n) => [n.id, Infinity]));
   gScore[startId] = 0;
   const fScore = Object.fromEntries(graph.nodes.map((n) => [n.id, Infinity]));
-  fScore[startId] = nodes[startId].h;
+  fScore[startId] = heuristic(nodes[startId], goalNode);
 
   const expandedNodes = [];
   const explanations = [];
-  const stepCosts = []; // Store costs at each step
+  const stepCosts = [];
 
   while (openSet.size > 0) {
     // Find node with lowest fScore in openSet
@@ -37,7 +45,7 @@ export function findPathAStar(graph, startId, goalId, trace = false) {
       }
     }
 
-    if (current === null) break; // Should not happen if goal is reachable
+    if (current === null) break;
 
     // --- Tracing ---
     if (trace) {
@@ -45,7 +53,7 @@ export function findPathAStar(graph, startId, goalId, trace = false) {
       stepCosts.push({
         nodeId: current,
         g: gScore[current],
-        h: nodes[current].h,
+        h: heuristic(nodes[current], goalNode),
         f: fScore[current],
       });
       let explain = `Expanding node ${current} (f=${fScore[current].toFixed(
@@ -57,7 +65,7 @@ export function findPathAStar(graph, startId, goalId, trace = false) {
       for (let { id: neighbor, cost } of neighbors[current]) {
         const tentativeG = gScore[current] + cost;
         if (tentativeG < gScore[neighbor]) {
-          const neighborF = tentativeG + nodes[neighbor].h;
+          const neighborF = tentativeG + heuristic(nodes[neighbor], goalNode);
           updatedNeighbors.push(`${neighbor}(f=${neighborF.toFixed(1)})`);
         }
       }
@@ -87,11 +95,10 @@ export function findPathAStar(graph, startId, goalId, trace = false) {
     for (let { id: neighbor, cost } of neighbors[current]) {
       const tentativeG = gScore[current] + cost;
       if (tentativeG < gScore[neighbor]) {
-        // This path to neighbor is better than any previous one. Record it!
         cameFrom[neighbor] = current;
         gScore[neighbor] = tentativeG;
-        fScore[neighbor] = tentativeG + nodes[neighbor].h;
-        openSet.set(neighbor, fScore[neighbor]); // Add/update in openSet
+        fScore[neighbor] = tentativeG + heuristic(nodes[neighbor], goalNode);
+        openSet.set(neighbor, fScore[neighbor]);
       }
     }
   }

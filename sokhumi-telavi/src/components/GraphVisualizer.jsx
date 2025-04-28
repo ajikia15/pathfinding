@@ -20,6 +20,8 @@ function GraphVisualizer({
   expanding = null,
   startNode = null,
   endNode = null,
+  heuristic,
+  goalNode,
 }) {
   const fgRef = useRef();
 
@@ -66,7 +68,9 @@ function GraphVisualizer({
       <ForceGraph2D
         ref={fgRef}
         graphData={graph}
-        nodeLabel={(n) => `${n.id} (h=${n.h})`}
+        nodeLabel={(n) =>
+          `${n.id} (h=${heuristic ? heuristic(n, goalNode).toFixed(1) : 0})`
+        }
         linkLabel={(l) => `cost=${l.cost}`}
         nodeRelSize={5}
         d3VelocityDecay={0.35}
@@ -118,11 +122,15 @@ function GraphVisualizer({
           ctx.font = `${fontSize}px Inter, sans-serif`;
           ctx.fillStyle = textColor;
           ctx.fillText(label, node.x, node.y - nodeSize / 2 - 2);
-          // Draw heuristic below node
+          // Draw heuristic below node (dynamic)
           ctx.textBaseline = "top";
           ctx.font = `${fontSize * 0.9}px Inter, sans-serif`;
           ctx.fillStyle = COLOR_TEXT_HEURISTIC;
-          ctx.fillText(`h=${node.h}`, node.x, node.y + nodeSize / 2 + 2);
+          ctx.fillText(
+            `h=${heuristic ? heuristic(node, goalNode).toFixed(1) : 0}`,
+            node.x,
+            node.y + nodeSize / 2 + 2
+          );
         }}
         linkColor={(l) => (pathLinks.has(l) ? COLOR_PATH : COLOR_DEFAULT_LINK)}
         linkCanvasObjectMode={() => "after"}
