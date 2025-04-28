@@ -16,6 +16,8 @@ function GraphSearchPanel({
   onRunAll,
   canRunAll,
   onStop,
+  simulationSpeed,
+  setSimulationSpeed,
 }) {
   return (
     <div className="controls-panel">
@@ -49,6 +51,43 @@ function GraphSearchPanel({
               </option>
             ))}
           </select>
+        </div>
+      </div>
+      {/* Simulation Speed Slider */}
+      <div style={{ width: "100%", margin: "10px 0 0 0" }}>
+        <label
+          htmlFor="sim-speed-slider"
+          style={{
+            display: "block",
+            color: "var(--text-secondary)",
+            fontWeight: 500,
+            marginBottom: 4,
+            fontSize: "0.95em",
+          }}
+        >
+          Simulation Speed
+        </label>
+        <input
+          id="sim-speed-slider"
+          type="range"
+          min={200}
+          max={1500}
+          step={50}
+          value={simulationSpeed}
+          onChange={(e) => setSimulationSpeed(Number(e.target.value))}
+          style={{ width: "100%" }}
+        />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: "0.85em",
+            color: "var(--text-secondary)",
+            marginTop: 2,
+          }}
+        >
+          <span>Fast</span>
+          <span>Slow</span>
         </div>
       </div>
       <div className="controls-buttons-row">

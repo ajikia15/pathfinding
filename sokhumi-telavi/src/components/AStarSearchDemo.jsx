@@ -78,6 +78,11 @@ function AStarSearchDemo() {
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const autoRunTimeoutRef = useRef(null);
   const [pendingAutoRun, setPendingAutoRun] = useState(false);
+  const [simulationSpeed, setSimulationSpeed] = useState(1500); // ms, default to slow for testing
+  const simulationSpeedRef = useRef(simulationSpeed);
+  useEffect(() => {
+    simulationSpeedRef.current = simulationSpeed;
+  }, [simulationSpeed]);
 
   // On search, run A* and store the trace
   const handleSearch = () => {
@@ -125,26 +130,24 @@ function AStarSearchDemo() {
   // Auto-run steps effect
   useEffect(() => {
     if (isAutoRunning && trace && !finished) {
-      let currentStep = step;
-      function runNext() {
-        if (currentStep < trace.expandedNodes.length - 1) {
+      if (step < trace.expandedNodes.length - 1) {
+        autoRunTimeoutRef.current = setTimeout(() => {
           setStep((s) => s + 1);
-          currentStep++;
-          autoRunTimeoutRef.current = setTimeout(runNext, 700);
-        } else {
+        }, simulationSpeedRef.current);
+      } else if (step === trace.expandedNodes.length - 1) {
+        autoRunTimeoutRef.current = setTimeout(() => {
           setStep((s) => s + 1);
           setFinished(true);
           setIsAutoRunning(false);
           autoRunTimeoutRef.current = null;
-        }
+        }, simulationSpeedRef.current);
       }
-      runNext();
     }
-    // Cleanup on unmount or when isAutoRunning changes
+    // Cleanup on unmount or when isAutoRunning/step changes
     return () => {
       if (autoRunTimeoutRef.current) clearTimeout(autoRunTimeoutRef.current);
     };
-  }, [isAutoRunning, trace, finished]);
+  }, [isAutoRunning, trace, finished, step]);
 
   // Reset handler
   const handleReset = () => {
@@ -212,6 +215,8 @@ function AStarSearchDemo() {
           onRunAll={handleRunAll}
           canRunAll={canRunAll && !isAutoRunning} // Disable run all when already running
           onStop={handleStop}
+          simulationSpeed={simulationSpeed}
+          setSimulationSpeed={setSimulationSpeed}
         />
         <div className="card step-section">
           {" "}
