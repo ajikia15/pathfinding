@@ -35,9 +35,6 @@ function App() {
           </div>
         )}
       </main>
-      <footer className="main-footer">
-        <span>© {new Date().getFullYear()} Graph Search Visualizer</span>
-      </footer>
     </div>
   );
 }

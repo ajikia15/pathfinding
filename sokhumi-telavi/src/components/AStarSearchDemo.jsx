@@ -77,6 +77,7 @@ function AStarSearchDemo() {
   const [finished, setFinished] = useState(false);
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const autoRunTimeoutRef = useRef(null);
+  const [pendingAutoRun, setPendingAutoRun] = useState(false);
 
   // On search, run A* and store the trace
   const handleSearch = () => {
@@ -104,40 +105,46 @@ function AStarSearchDemo() {
 
   // Run all steps automatically
   const handleRunAll = () => {
-    if (!trace || isAutoRunning || finished) return;
-    setIsAutoRunning(true);
-    let currentStep = step;
-
-    function runNext() {
-      if (currentStep < trace.expandedNodes.length - 1) {
-        setStep((s) => s + 1);
-        currentStep++;
-        autoRunTimeoutRef.current = setTimeout(runNext, 700);
-      } else {
-        // After last expansion, do one more step to show final path
-        setStep((s) => s + 1);
-        setFinished(true);
-        setIsAutoRunning(false);
-        autoRunTimeoutRef.current = null;
-      }
-    }
-
-    // If starting from beginning or after reset, initiate search first if needed
+    if (isAutoRunning || finished) return;
     if (!trace) {
-      handleSearch(); // This resets step to 0
-      // Need a slight delay to allow state update before starting auto-run
-      setTimeout(() => {
-        // Re-check trace exists after handleSearch
-        if (findPathAStar(graph, startNode, endNode, true)) {
-          runNext();
-        } else {
-          setIsAutoRunning(false); // Handle case where search fails
-        }
-      }, 50);
+      setPendingAutoRun(true);
+      handleSearch();
     } else {
-      runNext();
+      setIsAutoRunning(true);
     }
   };
+
+  // Auto-run effect: when trace is set and pendingAutoRun is true, start auto-running
+  useEffect(() => {
+    if (pendingAutoRun && trace) {
+      setIsAutoRunning(true);
+      setPendingAutoRun(false);
+    }
+  }, [pendingAutoRun, trace]);
+
+  // Auto-run steps effect
+  useEffect(() => {
+    if (isAutoRunning && trace && !finished) {
+      let currentStep = step;
+      function runNext() {
+        if (currentStep < trace.expandedNodes.length - 1) {
+          setStep((s) => s + 1);
+          currentStep++;
+          autoRunTimeoutRef.current = setTimeout(runNext, 700);
+        } else {
+          setStep((s) => s + 1);
+          setFinished(true);
+          setIsAutoRunning(false);
+          autoRunTimeoutRef.current = null;
+        }
+      }
+      runNext();
+    }
+    // Cleanup on unmount or when isAutoRunning changes
+    return () => {
+      if (autoRunTimeoutRef.current) clearTimeout(autoRunTimeoutRef.current);
+    };
+  }, [isAutoRunning, trace, finished]);
 
   // Reset handler
   const handleReset = () => {
