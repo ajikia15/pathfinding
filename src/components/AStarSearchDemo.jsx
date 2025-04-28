@@ -289,7 +289,9 @@ function AlgorithmSearchDemo() {
           </div>
         )}
         {stepCosts.length > 0 && <StepCostList stepCosts={stepCosts} />}
-        {path.length > 0 && <PathOutput path={path} pathCost={pathCost} />}
+        {path.length > 0 && (
+          <PathOutput path={path} pathCost={pathCost} expandedCount={trace?.expandedNodes?.length || 0} />
+        )}
       </aside>
       <section className="astar-main">
         {" "}
