@@ -5,6 +5,10 @@ import StepCostList from "./StepCostList";
 import PathOutput from "./PathOutput";
 import Legend from "./Legend";
 import { findPathAStar, calcPathCost } from "../algorithms/astar";
+import {
+  findPathBidirectionalIDDFS,
+  calcPathCost as calcPathCostBidir,
+} from "../algorithms/bidirectional_iddfs";
 
 // --- New coordinate-based graph ---
 const coordinateGraph = {
@@ -104,7 +108,7 @@ function centerGraphNodes(graph) {
   return graph;
 }
 
-function AStarSearchDemo() {
+function AlgorithmSearchDemo() {
   const [graph, setGraph] = useState(centerGraphNodes(coordinateGraph));
   const [startNode, setStartNode] = useState("Telavi");
   const [endNode, setEndNode] = useState("Sokhumi");
@@ -116,16 +120,21 @@ function AStarSearchDemo() {
   const [pendingAutoRun, setPendingAutoRun] = useState(false);
   const [simulationSpeed, setSimulationSpeed] = useState(1500); // ms, default to slow for testing
   const simulationSpeedRef = useRef(simulationSpeed);
+  const [algorithm, setAlgorithm] = useState("astar");
   useEffect(() => {
     simulationSpeedRef.current = simulationSpeed;
   }, [simulationSpeed]);
 
-  // On search, run A* and store the trace
+  // On search, run selected algorithm and store the trace
   const handleSearch = () => {
     if (autoRunTimeoutRef.current) clearTimeout(autoRunTimeoutRef.current);
     setIsAutoRunning(false);
-    // --- Pass heuristic and goalId to A* ---
-    const result = findPathAStar(graph, startNode, endNode, true, heuristic);
+    let result;
+    if (algorithm === "astar") {
+      result = findPathAStar(graph, startNode, endNode, true, heuristic);
+    } else if (algorithm === "bidir_iddfs") {
+      result = findPathBidirectionalIDDFS(graph, startNode, endNode, true);
+    }
     setTrace(result);
     setStep(0);
     setFinished(false);
@@ -222,7 +231,11 @@ function AStarSearchDemo() {
   const path = trace && finished ? trace.path : [];
   const stepCosts = trace ? trace.stepCosts.slice(0, step) : []; // Show costs up to the node *before* expansion
   const pathCost =
-    trace && finished ? calcPathCost(trace.path, graph.links) : 0;
+    trace && finished
+      ? algorithm === "astar"
+        ? calcPathCost(trace.path, graph.links)
+        : calcPathCostBidir(trace.path, graph.links)
+      : 0;
   const explanation =
     trace && trace.explanations && step < trace.explanations.length
       ? trace.explanations[step]
@@ -255,6 +268,19 @@ function AStarSearchDemo() {
           simulationSpeed={simulationSpeed}
           setSimulationSpeed={setSimulationSpeed}
         />
+        <div className="card">
+          <label htmlFor="algo-select">Algorithm:</label>
+          <select
+            id="algo-select"
+            value={algorithm}
+            onChange={(e) => setAlgorithm(e.target.value)}
+            disabled={isSearching || isAutoRunning}
+            style={{ width: "100%", marginBottom: 10 }}
+          >
+            <option value="astar">A* Search</option>
+            <option value="bidir_iddfs">Bidirectional IDDFS</option>
+          </select>
+        </div>
         <div className="card step-section">
           {" "}
           {/* Step counter card */}
@@ -293,4 +319,4 @@ function AStarSearchDemo() {
   );
 }
 
-export default AStarSearchDemo;
+export default AlgorithmSearchDemo;

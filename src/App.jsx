@@ -1,6 +1,6 @@
 import "./App.css";
 import { useState } from "react";
-import AStarSearchDemo from "./components/AStarSearchDemo";
+import AlgorithmSearchDemo from "./components/AStarSearchDemo";
 
 function App() {
   const [tab, setTab] = useState("astar");
@@ -16,7 +16,7 @@ function App() {
             className={tab === "astar" ? "tab-btn active" : "tab-btn"}
             onClick={() => setTab("astar")}
           >
-            A* Search
+            A* / Bidirectional IDDFS
           </button>
           <button
             className={tab === "other" ? "tab-btn active" : "tab-btn"}
@@ -27,7 +27,7 @@ function App() {
         </nav>
       </header>
       <main className="main-content">
-        {tab === "astar" && <AStarSearchDemo />}
+        {tab === "astar" && <AlgorithmSearchDemo />}
         {tab === "other" && (
           <div className="algo-placeholder card">
             <h2>Other Algorithm</h2>
